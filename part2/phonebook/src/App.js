@@ -16,8 +16,16 @@ const App = () => {
       name: newName
     }
 
+    const names = persons.map(p => p.name)
+
+    if (names.includes(newName)) {
+      alert(`${newName} is already in the phonebook`)
+      setNewName('')
+    }
+    else {
     setPersons(persons.concat(personObject))
     setNewName('')
+    }
   }
 
   const rows = () => persons.map( person => 
