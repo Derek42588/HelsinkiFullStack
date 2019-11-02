@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
-import axios from 'axios'
+import personsService from './services/persons'
 
 const App = () => {
   const [ persons, setPersons] = useState([
@@ -12,15 +12,13 @@ const App = () => {
   const [ newNumber, setNewNumber ] = useState('')
   const [ newFilter, setNewFilter ] = useState('')
 
-  const hook = () => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        setPersons(response.data)
+  useEffect(() => {
+    personsService
+      .getAll()
+      .then(initialPeople => {
+        setPersons(initialPeople)
       })
-  }
-
-  useEffect(hook, [])
+  })
 
   const handleNameChange = (event) => {
     setNewName(event.target.value)
@@ -30,6 +28,17 @@ const App = () => {
   }
   const handleFilterChange = (event) => {
     setNewFilter(event.target.value)
+  }
+
+  const removePersonHandler = ( id, name ) => {
+    const confirmation = window.confirm(`Delete ${name} ?`)
+
+    if (confirmation) {
+
+    personsService
+    .removePerson(id)
+    .then()
+    }
   }
 
   const addPerson = (event) => {
@@ -42,8 +51,29 @@ const App = () => {
     const names = persons.map(p => p.name)
 
     if (names.includes(newName)) {
-      alert(`${newName} is already in the phonebook`)
-      setNewName('')
+     
+      // alert(`${newName} is already in the phonebook`)
+      // setNewName('')
+      const confirmation = window.confirm (`${newName} is already in the phonebook, replace the old number with a new one?`)
+
+      if (confirmation) {
+        const person = persons.find(p => p.name)
+        const changedPerson = {...person, number:newNumber}
+
+        personsService
+        .update(person.id, changedPerson)
+        .then(returnedPerson => {
+          setPersons(persons.map(p => p.id !== person.id ? p: returnedPerson))
+          setNewName('')
+          setNewNumber('')
+        })
+        .catch(error => {
+          alert(
+            `the person cannot be found in phonebook!`
+          )
+          setPersons(persons.filter(p => p.id !== person.id))
+        })
+      }
     }
     else if (newName === '') {
       alert('You must enter a name!')
@@ -52,9 +82,17 @@ const App = () => {
       alert('You must enter a number!')
     }
     else {
-    setPersons(persons.concat(personObject))
-    setNewName('')
-    setNewNumber('')
+    // setPersons(persons.concat(personObject))
+    // setNewName('')
+    // setNewNumber('')
+
+    personsService
+      .create(personObject)
+      .then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson))
+        setNewName('')
+        setNewNumber('')
+      })
     }
   }
 
@@ -81,7 +119,8 @@ const App = () => {
       <h2>Numbers</h2>
       <Persons 
       persons = {persons}
-      newFilter = {newFilter}/>
+      newFilter = {newFilter}
+      removePersonHandler = {removePersonHandler}/>
     </div>
   )
 }
